@@ -38,7 +38,9 @@ class Runner(ABC):
         execute_args, execute_kwargs = self.__get_args_kwargs(execute_args, execute_kwargs)
 
         task_class = load_task(class_name, force_reload)
-        task = task_class(runner=self, logger=self.logger)
+        task_logger = type(self.logger)(name=name)
+        task_logger.handlers = self.logger.handlers
+        task = task_class(runner=self, logger=task_logger)
 
         return TaskMetadata(name, task, interval, class_name,
                                 setup_args, setup_kwargs, teardown_args, teardown_kwargs, execute_args, execute_kwargs)
@@ -53,7 +55,7 @@ class Runner(ABC):
     def _stop_task(self, name):
         metadata = self.task_data[name]
         metadata.task.teardown(*metadata.teardown_args, **metadata.teardown_kwargs)
-        self.logger.info("Task {} of type {} started running.".format(name, metadata.class_name))
+        self.logger.info("Task {} of type {} finished running.".format(name, metadata.class_name))
 
     def add_task(self, name: str, interval: float, class_name: str, force_reload: bool = False,
                  setup_args: Iterable = None, setup_kwargs: Mapping = None,

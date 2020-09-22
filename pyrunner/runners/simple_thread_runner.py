@@ -31,7 +31,7 @@ class SimpleThreadRunner(Runner):
                 metadata.task.execute(*metadata.execute_args, **metadata.execute_kwargs)
         finally:
             metadata.task.teardown(*metadata.teardown_args, **metadata.teardown_kwargs)
-            self.logger.info("Task {} of type {} started running.".format(name, metadata.class_name))
+            self.logger.info("Task {} of type {} finished running.".format(name, metadata.class_name))
 
     def _start_task(self, name):
         self._kill_events[name] = Event()
