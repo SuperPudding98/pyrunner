@@ -1,7 +1,10 @@
-from abc import ABC, abstractmethod
-from logbook import Logger
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from logbook import Logger
+    from pyrunner.runners.base import Runner
 
-from ..runners.base import Runner
+from abc import ABC, abstractmethod
 
 
 class Task(ABC):

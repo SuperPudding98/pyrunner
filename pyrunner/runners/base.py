@@ -1,10 +1,13 @@
-from abc import ABC, abstractmethod
-from logbook import Logger
-from collections.abc import Iterable, Mapping
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from logbook import Logger
+    from collections.abc import Iterable, Mapping
 
-from ..misc.exceptions import TaskAlreadyExistsError, NoSuchTaskError
-from ..misc.types import TaskMetadata
-from ..misc.utils import load_task
+from abc import ABC, abstractmethod
+from pyrunner.misc.exceptions import TaskAlreadyExistsError, NoSuchTaskError
+from pyrunner.misc.types import TaskMetadata
+from pyrunner.misc.utils import load_task
 
 
 class Runner(ABC):
@@ -26,6 +29,22 @@ class Runner(ABC):
         kwargs = {} if kwargs is None else kwargs
         return args, kwargs
 
+    def _create_task_metadata(self, name: str, interval: float, class_name: str, force_reload: bool = False,
+                              setup_args: Iterable = None, setup_kwargs: Mapping = None,
+                              teardown_args: Iterable = None, teardown_kwargs: Mapping = None,
+                              execute_args: Iterable = None, execute_kwargs: Mapping = None) -> TaskMetadata:
+        setup_args, setup_kwargs = self.__get_args_kwargs(setup_args, setup_kwargs)
+        teardown_args, teardown_kwargs = self.__get_args_kwargs(teardown_args, teardown_kwargs)
+        execute_args, execute_kwargs = self.__get_args_kwargs(execute_args, execute_kwargs)
+
+        task_class = load_task(class_name, force_reload)
+        task_logger = type(self.logger)(name=name)
+        task_logger.handlers = self.logger.handlers
+        task = task_class(runner=self, logger=task_logger)
+
+        return TaskMetadata(name, task, interval, class_name,
+                                setup_args, setup_kwargs, teardown_args, teardown_kwargs, execute_args, execute_kwargs)
+
     @abstractmethod
     def _start_task(self, name):
         metadata = self.task_data[name]
@@ -36,9 +55,9 @@ class Runner(ABC):
     def _stop_task(self, name):
         metadata = self.task_data[name]
         metadata.task.teardown(*metadata.teardown_args, **metadata.teardown_kwargs)
-        self.logger.info("Task {} of type {} started running.".format(name, metadata.class_name))
+        self.logger.info("Task {} of type {} finished running.".format(name, metadata.class_name))
 
-    def add_task(self, name: str, interval: int, path: str, class_name: str,
+    def add_task(self, name: str, interval: float, class_name: str, force_reload: bool = False,
                  setup_args: Iterable = None, setup_kwargs: Mapping = None,
                  teardown_args: Iterable = None, teardown_kwargs: Mapping = None,
                  execute_args: Iterable = None, execute_kwargs: Mapping = None):
@@ -47,8 +66,8 @@ class Runner(ABC):
         If the runner was already started the task will start running immediately.
         :param name: Unique name for the task instance.
         :param interval: Interval in seconds between task executions.
-        :param path: Path to the task code file.
-        :param class_name: Name of the task class inside the code file.
+        :param class_name: Name of the task class.
+        :param force_reload: Whether to reload the task from the code file on disk.
         :param setup_args: Positional arguments to pass to task setup method.
         :param setup_kwargs: Keyword arguments to pass to task setup method.
         :param teardown_args: Positional arguments to pass to task teardown method.
@@ -59,15 +78,8 @@ class Runner(ABC):
         if name in self.task_data:
             raise TaskAlreadyExistsError("A task named {} is already registered to this runner.".format(name))
 
-        setup_args, setup_kwargs = self.__get_args_kwargs(setup_args, setup_kwargs)
-        teardown_args, teardown_kwargs = self.__get_args_kwargs(teardown_args, teardown_kwargs)
-        execute_args, execute_kwargs = self.__get_args_kwargs(execute_args, execute_kwargs)
-
-        task_class = load_task(path, class_name)
-        task = task_class(runner=self, logger=self.logger)
-
-        metadata = TaskMetadata(name, task, interval, path, class_name,
-                                setup_args, setup_kwargs, teardown_args, teardown_kwargs, execute_args, execute_kwargs)
+        metadata = self._create_task_metadata(name, interval, class_name, force_reload,
+                                              setup_args, setup_kwargs, teardown_args, teardown_kwargs, execute_args, execute_kwargs)
         self.task_data[name] = metadata
         self.logger.info("Task {} of type {} added.".format(name, metadata.class_name))
 
