@@ -3,6 +3,7 @@
 import click
 import signal
 import os
+import psutil
 from pathlib import Path
 from logbook import Logger, RotatingFileHandler
 from setproctitle import setproctitle
@@ -20,6 +21,14 @@ def _init_logger():
 
     return logger
 
+
+def _remove_stale_pidfile():
+    """
+    This deletes the pid file if the daemon didn't die in a clean fashion.
+    """
+    pidfile = PIDLockFile(PID_LOCK_FILE)
+    if (pid := pidfile.read_pid()) and not psutil.pid_exists(pid):
+        Path(pidfile.path).unlink()
 
 def _daemon_start():
     with DaemonContext(working_directory=WORKING_DIR, pidfile=PIDLockFile(PID_LOCK_FILE), detach_process=True):
@@ -49,7 +58,7 @@ def _daemon_stop():
 
 @click.group()
 def main():
-    pass
+    _remove_stale_pidfile()
 
 
 @main.command()
