@@ -31,6 +31,7 @@ class SimpleThreadRunner(Runner):
     def _task_loop(self, name):
         task = self._tasks[name]
         metadata = self.task_data[name]
+        self.logger.info("Task {} of type {} started running.".format(name, metadata.task_type.__name__))
         self._safe_run(func=task.setup, args=metadata.setup_args, kwargs=metadata.setup_kwargs,
                        error_msg="Task {} of type {} raised an unhandled exception during setup:".format(name, metadata.task_type.__name__))
 
