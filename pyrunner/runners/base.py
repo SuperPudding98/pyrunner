@@ -33,7 +33,7 @@ class Runner(ABC):
     def _start_task(self, name):
         task = self._tasks[name]
         metadata = self.task_data[name]
-        self.logger.info("Task {} of type {} started running.".format(name, metadata.task_type.__name__))
+        self.logger.info(f"Task \"{name}\" of type {metadata.task_type.__name__} started running.")
         task.setup(*metadata.setup_args, **metadata.setup_kwargs)
 
     @abstractmethod
@@ -41,7 +41,7 @@ class Runner(ABC):
         task = self._tasks[name]
         metadata = self.task_data[name]
         task.teardown(*metadata.teardown_args, **metadata.teardown_kwargs)
-        self.logger.info("Task {} of type {} finished running.".format(name, metadata.task_type.__name__))
+        self.logger.info(f"Task \"{name}\" of type {metadata.task_type.__name__} finished running.")
 
     def add_task(self, task_metadata: TaskMetadata):
         """
@@ -49,11 +49,11 @@ class Runner(ABC):
         :param task_metadata: A TaskMetadata object.
         """
         if task_metadata.name in self.task_data:
-            raise TaskAlreadyExistsError("A task named {} is already registered to this runner.".format(task_metadata.name))
+            raise TaskAlreadyExistsError(f"A task named \"{task_metadata.name}\" is already registered to this runner.")
 
         self.task_data[task_metadata.name] = task_metadata
         self._tasks[task_metadata.name] = self._init_task(task_metadata)
-        self.logger.info("Task {} of type {} added.".format(task_metadata.name, task_metadata.task_type.__name__))
+        self.logger.info(f"Task \"{task_metadata.name}\" of type {task_metadata.task_type.__name__} added.")
 
         if self._running:
             self._start_task(task_metadata.name)
@@ -65,14 +65,14 @@ class Runner(ABC):
         :param name: Unique name for the task instance.
         """
         if name not in self.task_data:
-            raise NoSuchTaskError("This runner has no task named {}. Cannot remove.".format(name))
+            raise NoSuchTaskError(f"This runner has no task named \"{name}\". Cannot remove.")
 
         if self._running:
             self._stop_task(name)
 
         metadata = self.task_data.pop(name)
         self._tasks.pop(name)
-        self.logger.info("Task {} of type {} removed.".format(name, metadata.task_type.__name__))
+        self.logger.info(f"Task \"{name}\" of type {metadata.task_type.__name__} removed.")
 
     def start(self):
         """
