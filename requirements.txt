@@ -3,3 +3,4 @@ frozendict
 python-daemon
 click
 setproctitle
+watchdog

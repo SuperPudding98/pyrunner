@@ -26,15 +26,19 @@ def _daemon_start():
         setproctitle(PROCESS_NAME)
 
         logger = _init_logger()
-        runner = RUNNER_TYPE(logger)
-        for task_metadata in TASKS:
-            runner.add_task(task_metadata)
-
         try:
-            runner.start()
-            signal.sigwait((signal.SIGTERM,))
-        finally:
-            runner.stop()
+            runner = RUNNER_TYPE(logger)
+            for task_metadata in TASKS:
+                runner.add_task(task_metadata)
+
+            try:
+                runner.start()
+                signal.sigwait((signal.SIGTERM,))
+            finally:
+                runner.stop()
+        except Exception:
+            logger.exception()
+            raise
 
 
 def _daemon_stop():
