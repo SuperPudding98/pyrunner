@@ -23,7 +23,7 @@ class Runner(ABC):
         self._running = False
 
     def _init_task(self, metadata):
-        task_logger = type(self.logger)(name=metadata.name)
+        task_logger = type(self.logger)(name=metadata.name, level=self.logger.level)
         task_logger.handlers = self.logger.handlers
         task = metadata.task_type(runner=self, logger=task_logger)
 
