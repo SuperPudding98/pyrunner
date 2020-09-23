@@ -2,6 +2,7 @@ FROM python:3.8
 
 # for convinience only, not needed for pyrunner
 RUN pip install ipython
+RUN apt-get update; apt-get install -y vim
 
 WORKDIR /usr/src/app
 
