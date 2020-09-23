@@ -1,0 +1,8 @@
+logbook
+frozendict
+python-daemon
+click
+setproctitle
+watchdog
+requests
+psutil
