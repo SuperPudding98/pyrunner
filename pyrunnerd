@@ -1,0 +1,75 @@
+#! /usr/local/bin/python
+
+import click
+import signal
+import os
+from pathlib import Path
+from logbook import Logger, RotatingFileHandler
+from setproctitle import setproctitle
+from daemon import DaemonContext
+from daemon.pidfile import PIDLockFile
+from pyrunner.config.log import LOG_PATH, LOGGER_NAME, LOGGING_LEVEL, MAX_BACKUP_LOGS, MAX_LOG_SIZE
+from pyrunner.config.runner import RUNNER_TYPE, WORKING_DIR, PID_LOCK_FILE, PROCESS_NAME
+from pyrunner.config.tasks import TASKS
+
+
+def _init_logger():
+    Path(LOG_PATH).parent.mkdir(parents=True, exist_ok=True)
+    logger = Logger(LOGGER_NAME, LOGGING_LEVEL)
+    logger.handlers.append(RotatingFileHandler(LOG_PATH, max_size=MAX_LOG_SIZE, backup_count=MAX_BACKUP_LOGS))
+
+    return logger
+
+
+def _daemon_start():
+    with DaemonContext(working_directory=WORKING_DIR, pidfile=PIDLockFile(PID_LOCK_FILE), detach_process=True):
+        setproctitle(PROCESS_NAME)
+
+        logger = _init_logger()
+        runner = RUNNER_TYPE(logger)
+        for task_metadata in TASKS:
+            runner.add_task(task_metadata)
+
+        try:
+            runner.start()
+            signal.sigwait((signal.SIGTERM,))
+        finally:
+            runner.stop()
+
+
+def _daemon_stop():
+    pidfile = PIDLockFile(PID_LOCK_FILE)
+    if pid := pidfile.read_pid():
+        os.kill(pid, signal.SIGTERM)
+
+
+@click.group()
+def main():
+    pass
+
+
+@main.command()
+def start():
+    _daemon_start()
+
+
+@main.command()
+def stop():
+    _daemon_stop()
+
+
+@main.command()
+def restart():
+    _daemon_stop()
+    _daemon_start()
+
+
+@main.command()
+def status():
+    pidfile = PIDLockFile(PID_LOCK_FILE)
+    msg = "Running" if pidfile.is_locked() else "NOT running"
+    print(msg)
+
+
+if __name__ == "__main__":
+    main()
