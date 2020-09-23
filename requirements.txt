@@ -5,3 +5,4 @@ click
 setproctitle
 watchdog
 requests
+psutil

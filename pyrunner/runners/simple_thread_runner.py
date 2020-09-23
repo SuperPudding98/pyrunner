@@ -31,22 +31,22 @@ class SimpleThreadRunner(Runner):
     def _task_loop(self, name):
         task = self._tasks[name]
         metadata = self.task_data[name]
-        self.logger.info("Task {} of type {} started running.".format(name, metadata.task_type.__name__))
+        self.logger.info(f"Task \"{name}\" of type {metadata.task_type.__name__} started running.")
         self._safe_run(func=task.setup, args=metadata.setup_args, kwargs=metadata.setup_kwargs,
-                       error_msg="Task {} of type {} raised an unhandled exception during setup:".format(name, metadata.task_type.__name__))
+                       error_msg=f"Task \"{name}\" of type {metadata.task_type.__name__} raised an unhandled exception during setup:")
 
         try:
             self._safe_run(func=task.execute, args=metadata.execute_args, kwargs=metadata.execute_kwargs,
-                           error_msg="Task {} of type {} raised an unhandled exception during execution:".format(name, metadata.task_type.__name__),
+                           error_msg=f"Task \"{name}\" of type {metadata.task_type.__name__} raised an unhandled exception during execution:",
                            reraise=False)
             while not self._kill_events[name].wait(metadata.interval):
                 self._safe_run(func=task.execute, args=metadata.execute_args, kwargs=metadata.execute_kwargs,
-                               error_msg="Task {} of type {} raised an unhandled exception during execution:".format(name, metadata.task_type.__name__),
+                               error_msg=f"Task \"{name}\" of type {metadata.task_type.__name__} raised an unhandled exception during execution:",
                                reraise=False)
         finally:
             self._safe_run(func=task.teardown, args=metadata.teardown_args, kwargs=metadata.teardown_kwargs,
-                           error_msg="Task {} of type {} raised an unhandled exception during teardown:".format(name, metadata.task_type.__name__))
-            self.logger.info("Task {} of type {} finished running.".format(name, metadata.task_type.__name__))
+                           error_msg=f"Task \"{name}\" of type {metadata.task_type.__name__} raised an unhandled exception during teardown:")
+            self.logger.info(f"Task \"{name}\" of type {metadata.task_type.__name__} finished running.")
 
     def _start_task(self, name):
         self._kill_events[name] = Event()
