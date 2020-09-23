@@ -1,2 +1,5 @@
 logbook
 frozendict
+python-daemon
+click
+setproctitle
